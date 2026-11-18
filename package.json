@@ -1,0 +1,15 @@
+{
+  "name": "trpc-axum-interop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bindings": "cargo run --quiet --locked --example counter -- --export tests/generated",
+    "test": "npm run bindings && tsc --noEmit && node --experimental-strip-types --test tests/client.test.ts"
+  },
+  "devDependencies": {
+    "@trpc/client": "11.29.4",
+    "@trpc/server": "11.29.4",
+    "@types/node": "^24.0.0",
+    "typescript": "5.9.3"
+  }
+}

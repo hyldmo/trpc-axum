@@ -1,0 +1,16 @@
+[package]
+name = "trpc-axum"
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/hyldmo/trpc-axum"
+description = "Serve tRPC v11 HTTP queries and mutations from Axum"
+
+[dependencies]
+axum = "0.8"
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ts-rs = "12"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
