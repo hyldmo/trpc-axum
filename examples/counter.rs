@@ -1,12 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    env,
-    path::Path,
-    sync::{
-        Arc,
-        atomic::{AtomicI32, Ordering},
-    },
-};
+use std::{env, path::Path, sync::Arc};
+use tokio::sync::Mutex;
 use trpc_axum::{ErrorCode, Router, RpcError};
 use ts_rs::TS;
 
@@ -21,24 +15,25 @@ struct Count {
 }
 
 fn counter() -> Router {
-    let value = Arc::new(AtomicI32::new(0));
+    let value = Arc::new(Mutex::new(0_i32));
     let reader = Arc::clone(&value);
     let counter = Router::new()
         .query("value", move |_, (): ()| {
-            let value = reader.load(Ordering::Relaxed);
-            async move { Ok(Count { value }) }
+            let reader = Arc::clone(&reader);
+            async move {
+                Ok(Count {
+                    value: *reader.lock().await,
+                })
+            }
         })
         .mutation("add", move |_, change: Add| {
             let counter = Arc::clone(&value);
             async move {
-                let previous = counter
-                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
-                        v.checked_add(change.by)
-                    })
-                    .map_err(|_| RpcError::new(ErrorCode::BadRequest, "Counter overflow"))?;
-                Ok(Count {
-                    value: previous + change.by,
-                })
+                let mut value = counter.lock().await;
+                *value = value
+                    .checked_add(change.by)
+                    .ok_or_else(|| RpcError::new(ErrorCode::BadRequest, "Counter overflow"))?;
+                Ok(Count { value: *value })
             }
         });
     Router::new().nest("counter", counter)
